@@ -2,6 +2,14 @@
 
 
 [[projects]]
+  branch = "master"
+  digest = "1:f98385a9b77f6cacae716a59c04e6ac374d101466d4369c4e8cc706a39c4bb2e"
+  name = "github.com/bradfitz/gomemcache"
+  packages = ["memcache"]
+  pruneopts = "UT"
+  revision = "551aad21a6682b95329c1f5bd62ee5060d64f7e8"
+
+[[projects]]
   digest = "1:abeb38ade3f32a92943e5be54f55ed6d6e3b6602761d74b4aab4c9dd45c18abd"
   name = "github.com/fsnotify/fsnotify"
   packages = ["."]
@@ -46,14 +54,20 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:035975e7fa53643b900ebfb20ff006f787bde5d3411998f0f40484304520b1a8"
+  digest = "1:48648d745577a7bc7782cf415fd5e00b463afbfa34a6a65fbd10ecfa6a4858e1"
   name = "github.com/netflix/rend"
   packages = [
     "common",
     "handlers",
+    "handlers/memcached",
+    "handlers/memcached/batched",
+    "handlers/memcached/chunked",
+    "handlers/memcached/std",
     "metrics",
     "orcas",
     "protocol",
+    "protocol/binprot",
+    "protocol/textprot",
     "server",
     "timer",
   ]
@@ -146,7 +160,17 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
+    "github.com/bradfitz/gomemcache/memcache",
+    "github.com/netflix/rend/common",
+    "github.com/netflix/rend/handlers",
+    "github.com/netflix/rend/handlers/memcached",
+    "github.com/netflix/rend/metrics",
+    "github.com/netflix/rend/orcas",
+    "github.com/netflix/rend/protocol",
+    "github.com/netflix/rend/protocol/binprot",
+    "github.com/netflix/rend/protocol/textprot",
     "github.com/netflix/rend/server",
+    "github.com/netflix/rend/timer",
     "github.com/spf13/viper",
   ]
   solver-name = "gps-cdcl"
