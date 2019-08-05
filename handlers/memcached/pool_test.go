@@ -31,6 +31,7 @@ func TestLocalhost(t *testing.T) {
 func testWithClient(t *testing.T, h *Handler) {
 	testGetMissIsProperlySetWithClient(t, h)
 	testSetIsWorkingWithoutErrorWithClient(t, h)
+	testGetErrorsAreProperlyReported(t, h)
 }
 
 func testGetMissIsProperlySetWithClient(t *testing.T, h *Handler) {
@@ -50,6 +51,26 @@ func testGetMissIsProperlySetWithClient(t *testing.T, h *Handler) {
 	resp := <-dataOut
 	if resp.Miss != true {
 		t.Errorf("Misses are not properly reported")
+	}
+}
+
+func testGetErrorsAreProperlyReported(t *testing.T, h *Handler) {
+	getCmd := common.GetRequest{
+		Keys: [][]byte{[]byte("test ")},
+		Opaques: []uint32{0},
+		Quiet: []bool{false},
+	}
+	dataOut := make(chan common.GetResponse, 1)
+	errOut := make(chan error, 1)
+	task := MemcachedGetTask{
+		cmd: getCmd,
+		dataOut: dataOut,
+		errorOut: errOut,
+	}
+	h.mcPool.getWorkQueue<-task
+	err := <-errOut
+	if err == nil {
+		t.Errorf("Error are not properly reported")
 	}
 }
 
