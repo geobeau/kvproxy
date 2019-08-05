@@ -12,12 +12,12 @@ type Handler struct {
 
 var singleton *Handler
 
-// InitMemecachedConn init a pool of memcached workers
-func InitMemecachedConn() error {
+// InitMemcachedConn init a pool of memcached workers
+func InitMemcachedConn() error {
 	if singleton == nil {
 		singleton = &Handler{
-			mcPool: NewMemcachedPool(8, 100),
-		}	
+			mcPool: NewMemcachedPool("localhost:11213", 8, 100),
+		}
 	}
 	return nil
 }
@@ -80,6 +80,8 @@ func (h *Handler) Get(cmd common.GetRequest) (<-chan common.GetResponse, <-chan 
 func (h *Handler) GetE(cmd common.GetRequest) (<-chan common.GetEResponse, <-chan error) {
 	dataOut := make(chan common.GetEResponse, len(cmd.Keys))
 	errorOut := make(chan error)
+	close(dataOut)
+	close(errorOut)
 	return dataOut, errorOut
 }
 
@@ -99,6 +101,5 @@ func (h *Handler) Delete(cmd common.DeleteRequest) error {
 
 // Touch perform a touch request: Not implemented
 func (h *Handler) Touch(cmd common.TouchRequest) error {
-
 	return nil
 }

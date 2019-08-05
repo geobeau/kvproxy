@@ -28,7 +28,7 @@ func initDefaultConfig() {
 func main() {
 	initDefaultConfig()
 
-	if err := memcached.InitMemecachedConn(); err != nil {
+	if err := memcached.InitMemcachedConn(); err != nil {
 		log.Fatal(err)
 	}
 

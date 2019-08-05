@@ -5,8 +5,11 @@ Act as a proxy for a memcached cluster.
 
 # Running
 
-`go run .`
+```go run .```
 
 # Testing
 
-`go test -coverpkg=all ./...`
+```bash
+memcached -v -t 10 -p 11213
+go test -coverpkg=all ./...
+```

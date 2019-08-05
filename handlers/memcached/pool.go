@@ -1,8 +1,6 @@
 package memcached
 
 import (
-	"runtime"
-	"fmt"
 	"github.com/bradfitz/gomemcache/memcache"
 	"github.com/netflix/rend/common"
 )
@@ -25,7 +23,8 @@ type MemcachedSetTask struct {
 	errorOut chan error
 }
 
-func NewMemcachedPool(workers , queueSize int) MemcachedPool {
+// NewMemcachedPool return a pool of worker and chans to interact with
+func NewMemcachedPool(memcached string, workers , queueSize int) MemcachedPool {
 	getWorkQueue := make(chan MemcachedGetTask, queueSize)
 	setWorkQueue := make(chan MemcachedSetTask, queueSize)
 	pool := MemcachedPool{
@@ -35,15 +34,14 @@ func NewMemcachedPool(workers , queueSize int) MemcachedPool {
 		setWorkQueue: setWorkQueue,
 	}
 	for i := 0; i < workers; i++ {
-		go pool.worker()
+		mc := memcache.New(memcached)
+		go pool.worker(mc)
 	}
 	return pool
 }
 
-func (p *MemcachedPool) worker(){
-	mc := memcache.New("localhost:11211")
+func (p *MemcachedPool) worker(mc *memcache.Client){
 	for {
-		fmt.Println(runtime.NumGoroutine())
 		select {
 			case task := <-p.getWorkQueue:
 				p.get(task, mc)
