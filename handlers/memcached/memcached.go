@@ -1,99 +1,89 @@
 package memcached
 
 import (
-	"fmt"
-
-	"github.com/bradfitz/gomemcache/memcache"
 	"github.com/netflix/rend/common"
 	"github.com/netflix/rend/handlers"
 )
 
+// Handler is an handler for executing memcached requests
 type Handler struct {
-	mc	*memcache.Client
+	mcPool MemcachedPool
 }
 
 var singleton *Handler
 
-func InitMemecahedConn() error {
+// InitMemecachedConn init a pool of memcached workers
+func InitMemecachedConn() error {
 	if singleton == nil {
 		singleton = &Handler{
-			mc: memcache.New("localhost:11211"),
+			mcPool: NewMemcachedPool(8, 100),
 		}	
 	}
 	return nil
-
 }
 
+// NewHandler return a memcached handler
 func NewHandler() (handlers.Handler, error) {
 	return singleton, nil
 }
 
+// Close the handler
 func (h *Handler) Close() error {
 	return nil
 }
 
+// Set perform a set request
 func (h *Handler) Set(cmd common.SetRequest) error {
-	item := &memcache.Item{
-		Key: string(cmd.Key),
-		Value: cmd.Data,
-		Flags: cmd.Flags,
-		Expiration: int32(cmd.Exptime),
+	errorOut := make(chan error)
+	task := MemcachedSetTask{
+		cmd: cmd,
+		errorOut:  errorOut,
 	}
-	return h.mc.Set(item)
+	h.mcPool.setWorkQueue<- task
+	return <-errorOut
 }
 
+// Add perform an add request: Not implemented
 func (h *Handler) Add(cmd common.SetRequest) error {
 	return nil
 }
 
+// Replace perform a replace: Not implemented
 func (h *Handler) Replace(cmd common.SetRequest) error {
 	return nil
 }
 
+// Append perform an append: Not implemented
 func (h *Handler) Append(cmd common.SetRequest) error {
 	return nil
 }
 
+// Prepend perform a prepend: Not implemented
 func (h *Handler) Prepend(cmd common.SetRequest) error {
 	return nil
 }
 
+// Get perform a get request
 func (h *Handler) Get(cmd common.GetRequest) (<-chan common.GetResponse, <-chan error) {
 	dataOut := make(chan common.GetResponse, len(cmd.Keys))
-	errorOut := make(chan error)
-
-	for idx, key := range cmd.Keys {
-		item, err := h.mc.Get(string(key))
-		if err == memcache.ErrCacheMiss {
-			dataOut <- common.GetResponse{
-				Miss:   true,
-				Quiet:  cmd.Quiet[idx],
-				Opaque: cmd.Opaques[idx],
-				Key:    key,
-				Data:   nil,
-			}			
-		} else {
-			dataOut <- common.GetResponse{
-				Miss:   false,
-				Quiet:  cmd.Quiet[idx],
-				Opaque: cmd.Opaques[idx],
-				Flags:  0,
-				Key:    key,
-				Data:   item.Value,
-			}
-		}
+	errorOut := make(chan error, len(cmd.Keys))
+	task := MemcachedGetTask{
+		cmd: cmd,
+		dataOut: dataOut,
+		errorOut:  errorOut,
 	}
-	close(dataOut)
-	close(errorOut)
+	h.mcPool.getWorkQueue<- task
 	return dataOut, errorOut
 }
 
+// GetE perform a gete request: Not implemented
 func (h *Handler) GetE(cmd common.GetRequest) (<-chan common.GetEResponse, <-chan error) {
 	dataOut := make(chan common.GetEResponse, len(cmd.Keys))
 	errorOut := make(chan error)
 	return dataOut, errorOut
 }
 
+// GAT perform a gat request: Not implemented
 func (h *Handler) GAT(cmd common.GATRequest) (common.GetResponse, error) {
 	return common.GetResponse{
 		Miss:   true,
@@ -102,10 +92,12 @@ func (h *Handler) GAT(cmd common.GATRequest) (common.GetResponse, error) {
 	}, nil
 }
 
+// Delete perform a delete request: Not implemented
 func (h *Handler) Delete(cmd common.DeleteRequest) error {
 	return nil
 }
 
+// Touch perform a touch request: Not implemented
 func (h *Handler) Touch(cmd common.TouchRequest) error {
 
 	return nil

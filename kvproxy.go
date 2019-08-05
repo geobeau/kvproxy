@@ -5,6 +5,8 @@ import (
 	"log"
 	"os/signal"
 	"syscall"
+	"net/http"
+	_ "net/http/pprof"
 
 	"github.com/geobeau/kvproxy/orcas"
 	"github.com/geobeau/kvproxy/handlers/memcached"
@@ -26,7 +28,7 @@ func initDefaultConfig() {
 func main() {
 	initDefaultConfig()
 
-	if err := memcached.InitMemecahedConn(); err != nil {
+	if err := memcached.InitMemecachedConn(); err != nil {
 		log.Fatal(err)
 	}
 
@@ -35,6 +37,10 @@ func main() {
 
 	l := server.TCPListener(viper.GetInt("ListenPort"))
 	ps := []protocol.Components{binprot.Components, textprot.Components}
+
+	go func() {
+		log.Println(http.ListenAndServe("localhost:6060", nil))
+	}()
 
 	// Graceful stop
 	var gracefulStop = make(chan os.Signal)
