@@ -10,6 +10,6 @@ Act as a proxy for a memcached cluster.
 # Testing
 
 ```bash
-memcached -v -t 10 -p 11213
+memcached -p 11213 &
 go test -coverpkg=all ./...
 ```

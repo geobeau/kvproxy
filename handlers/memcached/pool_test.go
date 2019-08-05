@@ -23,7 +23,7 @@ func TestLocalhost(t *testing.T) {
 		return
 	}
 	h := &Handler{
-		mcPool: NewMemcachedPool("localhost:11213", 8, 100),
+		mcPool: NewPool("localhost:11213", 8, 100),
 	}
 	testWithClient(t, h)
 }
@@ -42,7 +42,7 @@ func testGetMissIsProperlySetWithClient(t *testing.T, h *Handler) {
 	}
 	dataOut := make(chan common.GetResponse, 1)
 	errOut := make(chan error, 1)
-	task := MemcachedGetTask{
+	task := GetTask{
 		cmd: getCmd,
 		dataOut: dataOut,
 		errorOut: errOut,
@@ -62,7 +62,7 @@ func testGetErrorsAreProperlyReported(t *testing.T, h *Handler) {
 	}
 	dataOut := make(chan common.GetResponse, 1)
 	errOut := make(chan error, 1)
-	task := MemcachedGetTask{
+	task := GetTask{
 		cmd: getCmd,
 		dataOut: dataOut,
 		errorOut: errOut,
@@ -83,7 +83,7 @@ func testSetIsWorkingWithoutErrorWithClient(t *testing.T, h *Handler) {
 		Exptime: 0,
 	}
 	errOut := make(chan error, 1)
-	task := MemcachedSetTask{
+	task := SetTask{
 		cmd: setCmd,
 		errorOut: errOut,
 	}
@@ -101,7 +101,7 @@ func testSetIsWorkingWithoutErrorWithClient(t *testing.T, h *Handler) {
 	}
 	errOut = make(chan error, 1)
 	dataOut := make(chan common.GetResponse, 1)
-	getTask := MemcachedGetTask{
+	getTask := GetTask{
 		cmd: getCmd,
 		dataOut: dataOut,
 		errorOut: errOut,

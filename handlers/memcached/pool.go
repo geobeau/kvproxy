@@ -5,29 +5,33 @@ import (
 	"github.com/netflix/rend/common"
 )
 
-type MemcachedPool struct {
+// Pool describe a pool for memcached connectors
+type Pool struct {
 	workers int
 	queueSize int
-	getWorkQueue chan MemcachedGetTask
-	setWorkQueue chan MemcachedSetTask
+	getWorkQueue chan GetTask
+	setWorkQueue chan SetTask
 }
 
-type MemcachedGetTask struct {
+// GetTask a get task that can be processed by workers
+type GetTask struct {
 	cmd common.GetRequest
 	dataOut chan common.GetResponse
 	errorOut chan error
 }
 
-type MemcachedSetTask struct {
+
+// SetTask a set task that can be processed by workers
+type SetTask struct {
 	cmd common.SetRequest
 	errorOut chan error
 }
 
-// NewMemcachedPool return a pool of worker and chans to interact with
-func NewMemcachedPool(memcached string, workers , queueSize int) MemcachedPool {
-	getWorkQueue := make(chan MemcachedGetTask, queueSize)
-	setWorkQueue := make(chan MemcachedSetTask, queueSize)
-	pool := MemcachedPool{
+// NewPool return a pool of worker and chans to interact with
+func NewPool(memcached string, workers , queueSize int) Pool {
+	getWorkQueue := make(chan GetTask, queueSize)
+	setWorkQueue := make(chan SetTask, queueSize)
+	pool := Pool{
 		workers: workers,
 		queueSize: queueSize,
 		getWorkQueue: getWorkQueue,
@@ -40,7 +44,7 @@ func NewMemcachedPool(memcached string, workers , queueSize int) MemcachedPool {
 	return pool
 }
 
-func (p *MemcachedPool) worker(mc *memcache.Client){
+func (p *Pool) worker(mc *memcache.Client){
 	for {
 		select {
 			case task := <-p.getWorkQueue:
@@ -51,7 +55,7 @@ func (p *MemcachedPool) worker(mc *memcache.Client){
 	}
 }
 
-func (p *MemcachedPool) get(task MemcachedGetTask, mc *memcache.Client) {
+func (p *Pool) get(task GetTask, mc *memcache.Client) {
 	for idx, key := range task.cmd.Keys {
 		item, err := mc.Get(string(key))
 		if err == memcache.ErrCacheMiss {
@@ -79,7 +83,7 @@ func (p *MemcachedPool) get(task MemcachedGetTask, mc *memcache.Client) {
 	close(task.errorOut)
 }
 
-func (p *MemcachedPool) set(task MemcachedSetTask, mc *memcache.Client) {
+func (p *Pool) set(task SetTask, mc *memcache.Client) {
 	item := &memcache.Item{
 		Key: string(task.cmd.Key),
 		Value: task.cmd.Data,

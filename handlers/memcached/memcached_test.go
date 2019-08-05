@@ -26,7 +26,7 @@ func TestNewHandlerReturnSingleton(t *testing.T) {
 
 func TestGetRequestAreSendToPool(t *testing.T) {
 	InitMemcachedConn()
-	singleton.mcPool.getWorkQueue = make(chan MemcachedGetTask, 1)
+	singleton.mcPool.getWorkQueue = make(chan GetTask, 1)
 
 	req := common.GetRequest{
 		Keys: [][]byte{[]byte("test")},
@@ -49,7 +49,7 @@ func TestGetRequestAreSendToPool(t *testing.T) {
 
 func TestSetRequestAreSendToPool(t *testing.T) {
 	InitMemcachedConn()
-	singleton.mcPool.setWorkQueue = make(chan MemcachedSetTask, 1)
+	singleton.mcPool.setWorkQueue = make(chan SetTask, 1)
 	key := []byte("test")
 	data := []byte("datatest")
 	req := common.SetRequest{
@@ -59,7 +59,7 @@ func TestSetRequestAreSendToPool(t *testing.T) {
 
 	handler, _ := NewHandler()
 
-	var task MemcachedSetTask
+	var task SetTask
 
 	go func() {
 		task = <-singleton.mcPool.setWorkQueue
@@ -78,7 +78,7 @@ func TestSetRequestAreSendToPool(t *testing.T) {
 
 func TestSetRequestReturnErrorsFromPool(t *testing.T) {
 	InitMemcachedConn()
-	singleton.mcPool.setWorkQueue = make(chan MemcachedSetTask, 1)
+	singleton.mcPool.setWorkQueue = make(chan SetTask, 1)
 
 	req := common.SetRequest{
 		Key: []byte("test"),

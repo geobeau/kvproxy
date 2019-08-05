@@ -7,7 +7,7 @@ import (
 
 // Handler is an handler for executing memcached requests
 type Handler struct {
-	mcPool MemcachedPool
+	mcPool Pool
 }
 
 var singleton *Handler
@@ -16,7 +16,7 @@ var singleton *Handler
 func InitMemcachedConn() error {
 	if singleton == nil {
 		singleton = &Handler{
-			mcPool: NewMemcachedPool("localhost:11213", 8, 100),
+			mcPool: NewPool("localhost:11213", 8, 100),
 		}
 	}
 	return nil
@@ -35,7 +35,7 @@ func (h *Handler) Close() error {
 // Set perform a set request
 func (h *Handler) Set(cmd common.SetRequest) error {
 	errorOut := make(chan error)
-	task := MemcachedSetTask{
+	task := SetTask{
 		cmd: cmd,
 		errorOut:  errorOut,
 	}
@@ -67,7 +67,7 @@ func (h *Handler) Prepend(cmd common.SetRequest) error {
 func (h *Handler) Get(cmd common.GetRequest) (<-chan common.GetResponse, <-chan error) {
 	dataOut := make(chan common.GetResponse, len(cmd.Keys))
 	errorOut := make(chan error, len(cmd.Keys))
-	task := MemcachedGetTask{
+	task := GetTask{
 		cmd: cmd,
 		dataOut: dataOut,
 		errorOut:  errorOut,
