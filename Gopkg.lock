@@ -54,15 +54,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:48648d745577a7bc7782cf415fd5e00b463afbfa34a6a65fbd10ecfa6a4858e1"
+  digest = "1:922bb4dc129b234850f1c5f25caa4dce6bb854a5cc8c6a33ac5abca389b7069a"
   name = "github.com/netflix/rend"
   packages = [
     "common",
     "handlers",
-    "handlers/memcached",
-    "handlers/memcached/batched",
-    "handlers/memcached/chunked",
-    "handlers/memcached/std",
     "metrics",
     "orcas",
     "protocol",
@@ -81,6 +77,22 @@
   pruneopts = "UT"
   revision = "728039f679cbcd4f6a54e080d2219a4c4928c546"
   version = "v1.4.0"
+
+[[projects]]
+  branch = "master"
+  digest = "1:3bf3d17c8fa48b6af9c18c307eb197a63dfc1e8c04e6587b1f9ea1d9ae1dfe36"
+  name = "github.com/serialx/hashring"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "7706f26af1941a4e865d509c4681eb86c3b62bf8"
+
+[[projects]]
+  digest = "1:919bb3aa6d9d0b67648c219fa4925312bc3c2872da19e818fa769e9c97a2b643"
+  name = "github.com/spaolacci/murmur3"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "9f5d223c60793748f04a9d5b4b4eacddfc1f755d"
+  version = "v1.1"
 
 [[projects]]
   digest = "1:bb495ec276ab82d3dd08504bbc0594a65de8c3b22c6f2aaa92d05b73fbf3a82e"
@@ -163,7 +175,6 @@
     "github.com/bradfitz/gomemcache/memcache",
     "github.com/netflix/rend/common",
     "github.com/netflix/rend/handlers",
-    "github.com/netflix/rend/handlers/memcached",
     "github.com/netflix/rend/metrics",
     "github.com/netflix/rend/orcas",
     "github.com/netflix/rend/protocol",
@@ -171,6 +182,8 @@
     "github.com/netflix/rend/protocol/textprot",
     "github.com/netflix/rend/server",
     "github.com/netflix/rend/timer",
+    "github.com/serialx/hashring",
+    "github.com/spaolacci/murmur3",
     "github.com/spf13/viper",
   ]
   solver-name = "gps-cdcl"
