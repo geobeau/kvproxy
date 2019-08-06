@@ -26,7 +26,7 @@ func TestNewHandlerReturnSingleton(t *testing.T) {
 
 func TestGetRequestAreSendToPool(t *testing.T) {
 	InitMemcachedConn()
-	singleton.mcPool.getWorkQueue = make(chan GetTask, 1)
+	singleton.mcPool.GetWorkQueue = make(chan GetTask, 1)
 
 	req := common.GetRequest{
 		Keys: [][]byte{[]byte("test")},
@@ -35,9 +35,9 @@ func TestGetRequestAreSendToPool(t *testing.T) {
 	handler, _ := NewHandler()
 
 	resultChan, _ := handler.Get(req)
-	task := <-singleton.mcPool.getWorkQueue
+	task := <-singleton.mcPool.GetWorkQueue
 	dataPayload := []byte("data")
-	task.dataOut<- common.GetResponse{
+	task.DataOut<- common.GetResponse{
 		Data: dataPayload,
 	}
 
@@ -49,7 +49,7 @@ func TestGetRequestAreSendToPool(t *testing.T) {
 
 func TestSetRequestAreSendToPool(t *testing.T) {
 	InitMemcachedConn()
-	singleton.mcPool.setWorkQueue = make(chan SetTask, 1)
+	singleton.mcPool.SetWorkQueue = make(chan SetTask, 1)
 	key := []byte("test")
 	data := []byte("datatest")
 	req := common.SetRequest{
@@ -62,23 +62,23 @@ func TestSetRequestAreSendToPool(t *testing.T) {
 	var task SetTask
 
 	go func() {
-		task = <-singleton.mcPool.setWorkQueue
-		task.errorOut<- nil
+		task = <-singleton.mcPool.SetWorkQueue
+		task.ErrorOut<- nil
 	}()
 
 	handler.Set(req)
 
-	if string(task.cmd.Data) != string(data) {
+	if string(task.Cmd.Data) != string(data) {
 		t.Errorf("Set requests don't properly transmit data to pool")
 	}
-	if string(task.cmd.Key) != string(key) {
+	if string(task.Cmd.Key) != string(key) {
 		t.Errorf("Set requests don't properly transmit keys to pool")
 	}
 }
 
 func TestSetRequestReturnErrorsFromPool(t *testing.T) {
 	InitMemcachedConn()
-	singleton.mcPool.setWorkQueue = make(chan SetTask, 1)
+	singleton.mcPool.SetWorkQueue = make(chan SetTask, 1)
 
 	req := common.SetRequest{
 		Key: []byte("test"),
@@ -88,8 +88,8 @@ func TestSetRequestReturnErrorsFromPool(t *testing.T) {
 
 	errorTest := errors.New("errortest")
 	go func() {
-		task := <-singleton.mcPool.setWorkQueue
-		task.errorOut<- errorTest
+		task := <-singleton.mcPool.SetWorkQueue
+		task.ErrorOut<- errorTest
 	}()
 
 	err := handler.Set(req)

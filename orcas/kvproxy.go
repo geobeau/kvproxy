@@ -161,7 +161,7 @@ func (l *KvproxyOrca) Get(req common.GetRequest) error {
 	// and the errChan will have any other errors, such as an out of memory error from
 	// memcached. If any receive happens from errChan, there will be no more responses
 	// from resChan.
-	for {
+	for range req.Keys {
 		select {
 		case res, ok := <-resChan:
 			if !ok {

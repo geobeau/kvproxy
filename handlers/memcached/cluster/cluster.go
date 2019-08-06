@@ -1,25 +1,57 @@
 package memcached
 
 import (
+	"github.com/geobeau/kvproxy/handlers/memcached"
+
+	"github.com/serialx/hashring"
+	"github.com/spaolacci/murmur3"
 	"github.com/netflix/rend/common"
 	"github.com/netflix/rend/handlers"
 )
 
 // Handler is an handler for executing memcached requests
 type Handler struct {
-	mcPool Pool
+	cluster Cluster
+}
+
+// Cluster represents a map of pool and the ringhash functions
+type Cluster struct {
+	pools map[string] memcached.Pool
+	ring *hashring.HashRing
 }
 
 var singleton *Handler
 
-// InitMemcachedConn init a pool of memcached workers
-func InitMemcachedConn(server string) error {
+// InitMemcachedCluster init a pool of memcached workers
+func InitMemcachedCluster(servers []string) error {
 	if singleton == nil {
+		cluster, err := bootstrapCluster(servers)
+		if err != nil {
+			return err
+		}
 		singleton = &Handler{
-			mcPool: NewPool("localhost:11213", 8, 1000),
+			cluster: cluster,
 		}
 	}
 	return nil
+}
+
+func bootstrapCluster(servers []string) (Cluster, error) {
+	var serverName string
+	pools := make(map[string] memcached.Pool)
+	for server := range servers {
+		serverName = servers[server]
+		pools[serverName] = memcached.NewPool(serverName, 4, 1000)
+	}
+	hasher := murmur3.New32()
+	ring, err := hashring.NewWithHash(servers, hasher)
+	if err != nil {
+		return Cluster{}, err
+	}
+	return Cluster{
+		pools: pools,
+		ring: ring,
+	}, nil
 }
 
 // NewHandler return a memcached handler
@@ -35,11 +67,12 @@ func (h *Handler) Close() error {
 // Set perform a set request
 func (h *Handler) Set(cmd common.SetRequest) error {
 	errorOut := make(chan error, 1)
-	task := SetTask{
+	task := memcached.SetTask{
 		Cmd: cmd,
 		ErrorOut:  errorOut,
 	}
-	h.mcPool.SetWorkQueue<- task
+	poolName, _ := h.cluster.ring.GetNode(string(cmd.Key))
+	h.cluster.pools[poolName].SetWorkQueue <- task
 	return <-errorOut
 }
 
@@ -67,12 +100,29 @@ func (h *Handler) Prepend(cmd common.SetRequest) error {
 func (h *Handler) Get(cmd common.GetRequest) (<-chan common.GetResponse, <-chan error) {
 	dataOut := make(chan common.GetResponse, len(cmd.Keys))
 	errorOut := make(chan error, len(cmd.Keys))
-	task := GetTask{
-		Cmd: cmd,
-		DataOut: dataOut,
-		ErrorOut:  errorOut,
+	
+	// Break multiget into multiple get requests
+	// this trade batching for simplicity and parallel requesting
+	var poolName string
+	var subCmd common.GetRequest
+	var task memcached.GetTask
+	for i := range cmd.Keys {
+		poolName, _ = h.cluster.ring.GetNode(string(cmd.Keys[i]))
+		subCmd = common.GetRequest{
+			Keys: [][]byte{cmd.Keys[i]},
+			Opaques: cmd.Opaques,
+			Quiet: cmd.Quiet,
+			NoopEnd: cmd.NoopEnd,
+			NoopOpaque: cmd.NoopOpaque,
+		}
+		task = memcached.GetTask{
+			Cmd: subCmd,
+			DataOut: dataOut,
+			ErrorOut:  errorOut,
+		}
+		h.cluster.pools[poolName].GetWorkQueue <- task
 	}
-	h.mcPool.GetWorkQueue<- task
+	
 	return dataOut, errorOut
 }
 

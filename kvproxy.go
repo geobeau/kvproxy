@@ -9,7 +9,7 @@ import (
 	_ "net/http/pprof"
 
 	"github.com/geobeau/kvproxy/orcas"
-	"github.com/geobeau/kvproxy/handlers/memcached"
+	mc_cluster "github.com/geobeau/kvproxy/handlers/memcached/cluster"
 
 	"github.com/netflix/rend/server"
 	"github.com/netflix/rend/handlers"
@@ -27,12 +27,12 @@ func initDefaultConfig() {
 
 func main() {
 	initDefaultConfig()
-
-	if err := memcached.InitMemcachedConn(); err != nil {
+	err := mc_cluster.InitMemcachedCluster([]string{"localhost:11213", "localhost:11214"})
+	if err != nil {
 		log.Fatal(err)
 	}
 
-	h1 := memcached.NewHandler
+	h1 := mc_cluster.NewHandler
 	h2 := handlers.NilHandler
 
 	l := server.TCPListener(viper.GetInt("ListenPort"))

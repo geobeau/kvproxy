@@ -9,33 +9,33 @@ import (
 type Pool struct {
 	workers int
 	queueSize int
-	getWorkQueue chan GetTask
-	setWorkQueue chan SetTask
+	GetWorkQueue chan GetTask
+	SetWorkQueue chan SetTask
 }
 
 // GetTask a get task that can be processed by workers
 type GetTask struct {
-	cmd common.GetRequest
-	dataOut chan common.GetResponse
-	errorOut chan error
+	Cmd common.GetRequest
+	DataOut chan common.GetResponse
+	ErrorOut chan error
 }
 
 
 // SetTask a set task that can be processed by workers
 type SetTask struct {
-	cmd common.SetRequest
-	errorOut chan error
+	Cmd common.SetRequest
+	ErrorOut chan error
 }
 
 // NewPool return a pool of worker and chans to interact with
 func NewPool(memcached string, workers , queueSize int) Pool {
-	getWorkQueue := make(chan GetTask, queueSize)
-	setWorkQueue := make(chan SetTask, queueSize)
+	GetWorkQueue := make(chan GetTask, queueSize)
+	SetWorkQueue := make(chan SetTask, queueSize)
 	pool := Pool{
 		workers: workers,
 		queueSize: queueSize,
-		getWorkQueue: getWorkQueue,
-		setWorkQueue: setWorkQueue,
+		GetWorkQueue: GetWorkQueue,
+		SetWorkQueue: SetWorkQueue,
 	}
 	for i := 0; i < workers; i++ {
 		mc := memcache.New(memcached)
@@ -47,48 +47,46 @@ func NewPool(memcached string, workers , queueSize int) Pool {
 func (p *Pool) worker(mc *memcache.Client){
 	for {
 		select {
-			case task := <-p.getWorkQueue:
+			case task := <-p.GetWorkQueue:
 				p.get(task, mc)
-			case task := <-p.setWorkQueue:
+			case task := <-p.SetWorkQueue:
 				p.set(task, mc)
 		}
 	}
 }
 
 func (p *Pool) get(task GetTask, mc *memcache.Client) {
-	for idx, key := range task.cmd.Keys {
+	for idx, key := range task.Cmd.Keys {
 		item, err := mc.Get(string(key))
 		if err == memcache.ErrCacheMiss {
-			task.dataOut <- common.GetResponse{
+			task.DataOut <- common.GetResponse{
 				Miss:   true,
-				Quiet:  task.cmd.Quiet[idx],
-				Opaque: task.cmd.Opaques[idx],
+				Quiet:  task.Cmd.Quiet[idx],
+				Opaque: task.Cmd.Opaques[idx],
 				Key:    key,
 				Data:   nil,
 			}			
 		} else if err != nil {
-			task.errorOut<-err
+			task.ErrorOut<-err
 		} else {
-			task.dataOut <- common.GetResponse{
+			task.DataOut <- common.GetResponse{
 				Miss:   false,
-				Quiet:  task.cmd.Quiet[idx],
-				Opaque: task.cmd.Opaques[idx],
+				Quiet:  task.Cmd.Quiet[idx],
+				Opaque: task.Cmd.Opaques[idx],
 				Flags:  0,
 				Key:    key,
 				Data:   item.Value,
 			}
 		}
 	}
-	close(task.dataOut)
-	close(task.errorOut)
 }
 
 func (p *Pool) set(task SetTask, mc *memcache.Client) {
 	item := &memcache.Item{
-		Key: string(task.cmd.Key),
-		Value: task.cmd.Data,
-		Flags: task.cmd.Flags,
-		Expiration: int32(task.cmd.Exptime),
+		Key: string(task.Cmd.Key),
+		Value: task.Cmd.Data,
+		Flags: task.Cmd.Flags,
+		Expiration: int32(task.Cmd.Exptime),
 	}
-	task.errorOut<- mc.Set(item)
+	task.ErrorOut<- mc.Set(item)
 }

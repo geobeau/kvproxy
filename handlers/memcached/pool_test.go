@@ -47,7 +47,7 @@ func testGetMissIsProperlySetWithClient(t *testing.T, h *Handler) {
 		dataOut: dataOut,
 		errorOut: errOut,
 	}
-	h.mcPool.getWorkQueue<-task
+	h.mcPool.GetWorkQueue<-task
 	resp := <-dataOut
 	if resp.Miss != true {
 		t.Errorf("Misses are not properly reported")
@@ -67,7 +67,7 @@ func testGetErrorsAreProperlyReported(t *testing.T, h *Handler) {
 		dataOut: dataOut,
 		errorOut: errOut,
 	}
-	h.mcPool.getWorkQueue<-task
+	h.mcPool.GetWorkQueue<-task
 	err := <-errOut
 	if err == nil {
 		t.Errorf("Error are not properly reported")
@@ -87,7 +87,7 @@ func testSetIsWorkingWithoutErrorWithClient(t *testing.T, h *Handler) {
 		cmd: setCmd,
 		errorOut: errOut,
 	}
-	h.mcPool.setWorkQueue<-task
+	h.mcPool.SetWorkQueue<-task
 	resp := <-errOut
 	if resp != nil {
 		t.Errorf("Set doesn't work as expected %s", resp)
@@ -106,7 +106,7 @@ func testSetIsWorkingWithoutErrorWithClient(t *testing.T, h *Handler) {
 		dataOut: dataOut,
 		errorOut: errOut,
 	}
-	h.mcPool.getWorkQueue<-getTask
+	h.mcPool.GetWorkQueue<-getTask
 	getResp := <-dataOut
 	if getResp.Miss == true {
 		t.Errorf("Set didn't work on memcached")
